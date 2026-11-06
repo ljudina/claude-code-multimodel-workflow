@@ -40,6 +40,7 @@ The reasoning behind each rule, and token measurements from a test run, are in [
 | `.claude/settings.json` | Sets the main session model to Opus for the project |
 | `CLAUDE.md` | The rules that tell the main session when to use each agent |
 | `.claude/models.py` | Optional script that shows which model each agent used and how many tokens it consumed |
+| `.claude/solo.sh` | Optional script that runs a session on one model with subagents disabled |
 
 ## Requirements
 
@@ -56,6 +57,7 @@ Clone this repository, then run the following from the root of your own project,
 mkdir -p .claude/agents
 cp <clone>/.claude/agents/*.md .claude/agents/
 cp <clone>/.claude/models.py .claude/
+cp <clone>/.claude/solo.sh .claude/
 cat <clone>/CLAUDE.md >> CLAUDE.md
 ```
 
@@ -69,7 +71,7 @@ Then set the main model. If your project has no `.claude/settings.json`, copy th
 
 Restart Claude Code in the project. Subagents and settings are loaded when a session starts, so a running session will not see the new files.
 
-To use the workflow in every project, put the agent files in `~/.claude/agents/`, the rules in `~/.claude/CLAUDE.md`, and the model setting in `~/.claude/settings.json`.
+To use the workflow in every project, put the agent files in `~/.claude/agents/`, the rules in `~/.claude/CLAUDE.md`, and the model setting in `~/.claude/settings.json`. To run `solo.sh` from anywhere, copy it to a directory on your `PATH`.
 
 ## Check that it works
 
@@ -99,6 +101,28 @@ session e4381898
 - **Models** are the `model:` line in each agent file. Accepted values are `sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`.
 - **Effort** is the `effort:` line. The reviewer is set to `xhigh` because a missed bug is the most expensive failure in this workflow and the reviewer's runs are short. If your model does not accept `xhigh`, use `high`.
 - **Test commands.** Add your project's test, lint and type-check commands to `CLAUDE.md`. The main session and the reviewer both read that file, and a reviewer that can run the tests catches more than one that only reads the diff.
+
+## Run on a single model
+
+The workflow can be switched off for one session without changing any files. From the project root:
+
+```sh
+.claude/solo.sh fable
+```
+
+This starts a session where Fable does everything. With no arguments it uses Opus. Anything after the model name goes to `claude`, so `.claude/solo.sh sonnet -p "fix the failing test"` also works. The model name is required when other arguments follow, because the first argument is always read as the model.
+
+`--disallowedTools` removes the tool that starts subagents, and the appended prompt stops the model following rules it can no longer carry out. `/agents` still lists the agents, but the session cannot start them. Use `--model` rather than `/model` for this, because `/model` saves the choice to your user settings.
+
+The cost is the independent review: the model that wrote the code is also the one checking it.
+
+Start solo sessions fresh rather than resuming across modes. A conversation keeps the system prompt from its first request until it is compacted, so `solo.sh fable --resume <id>` on a normal session disables agents but leaves out the solo instructions, and resuming a solo session with plain `claude` keeps them.
+
+To keep the workflow but run every agent on one model, override the agent files for the session. `_FORCE` is needed because the `model:` line in an agent file otherwise wins. It requires Claude Code 2.1.257 or later:
+
+```sh
+CLAUDE_CODE_SUBAGENT_MODEL=opus CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 claude --model opus
+```
 
 ## Limitations
 
