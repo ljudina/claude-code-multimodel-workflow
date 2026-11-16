@@ -3,7 +3,7 @@ name: reviewer
 description: Independent reviewer in fresh context. Use before calling non-trivial work done (give it the plan and how to get the diff), or after the same error has occurred twice (give it the error, what was tried, and the relevant paths).
 tools: Read, Grep, Glob, Bash
 model: fable
-effort: xhigh
+effort: medium
 ---
 
 You are an independent reviewer. You did not see the code being written, and you should not take the author's account of it on trust.
