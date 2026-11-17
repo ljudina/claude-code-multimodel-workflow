@@ -18,13 +18,13 @@ flowchart TD
     RV -- APPROVE --> D
 ```
 
-The main session runs on Opus and does the work. It hands specific steps to three subagents, each of which starts with an empty context and returns only its conclusion:
+The main session runs on Opus at high effort and does the work. It hands specific steps to three subagents, each of which starts with an empty context and returns only its conclusion:
 
 | Agent | Model | Tools | When it runs |
 |---|---|---|---|
 | `search` | Sonnet, medium effort | Read, Glob, Grep | Broad searches: more than about three queries, or several files to read |
-| `planner` | Fable | Read, Glob, Grep, Bash | Once, before a plan for a non-trivial change is locked |
-| `reviewer` | Fable, extra-high effort | Read, Grep, Glob, Bash | Before non-trivial work is called done, and after the same error has occurred twice |
+| `planner` | Fable, medium effort | Read, Glob, Grep, Bash | Once, before a plan for a non-trivial change is locked |
+| `reviewer` | Fable, medium effort | Read, Grep, Glob, Bash | Before non-trivial work is called done, and after the same error has occurred twice |
 
 A change counts as trivial when it touches one file, is under about 30 lines, and does not change behaviour or interfaces. Trivial changes skip the planner and the reviewer.
 
@@ -37,14 +37,14 @@ The reasoning behind each rule, and token measurements from a test run, are in [
 | `.claude/agents/search.md` | The search subagent |
 | `.claude/agents/planner.md` | The planner subagent |
 | `.claude/agents/reviewer.md` | The reviewer subagent |
-| `.claude/settings.json` | Sets the main session model to Opus for the project |
+| `.claude/settings.json` | Sets the main session to Opus at high effort for the project |
 | `CLAUDE.md` | The rules that tell the main session when to use each agent |
 | `.claude/models.py` | Optional script that shows which model each agent used and how many tokens it consumed |
 | `.claude/solo.sh` | Optional script that runs a session on one model with subagents disabled |
 
 ## Requirements
 
-- Claude Code. The setup was built and tested on version 2.1.319; it relies on the `fable` model alias and the `effort` field in subagent frontmatter.
+- Claude Code. The setup was built and tested on version 2.1.319; it relies on the `fable` model alias, the `effort` field in subagent frontmatter and the `effortLevel` setting.
 - An account with access to Sonnet, Opus and Fable. Without Fable access, set `model: opus` in `planner.md` and `reviewer.md`.
 - A git repository in your project. The reviewer reads the change with `git diff`.
 - Python 3, only for the optional usage script.
@@ -61,17 +61,18 @@ cp <clone>/.claude/solo.sh .claude/
 cat <clone>/CLAUDE.md >> CLAUDE.md
 ```
 
-Then set the main model. If your project has no `.claude/settings.json`, copy the one from this repository. If it has one, add this key to it:
+Then set the main model and its effort level. If your project has no `.claude/settings.json`, copy the one from this repository. If it has one, add these keys to it:
 
 ```json
 {
-  "model": "opus"
+  "model": "opus",
+  "effortLevel": "high"
 }
 ```
 
 Restart Claude Code in the project. Subagents and settings are loaded when a session starts, so a running session will not see the new files.
 
-To use the workflow in every project, put the agent files in `~/.claude/agents/`, the rules in `~/.claude/CLAUDE.md`, and the model setting in `~/.claude/settings.json`. To run `solo.sh` from anywhere, copy it to a directory on your `PATH`.
+To use the workflow in every project, put the agent files in `~/.claude/agents/`, the rules in `~/.claude/CLAUDE.md`, and the two settings in `~/.claude/settings.json`. To run `solo.sh` from anywhere, copy it to a directory on your `PATH`.
 
 ## Check that it works
 
@@ -99,7 +100,7 @@ session e4381898
 
 - **The trivial-change threshold** is one line in `CLAUDE.md`. Raise it if the reviewer runs on changes you consider routine; lower it if unreviewed changes cause problems.
 - **Models** are the `model:` line in each agent file. Accepted values are `sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`.
-- **Effort** is the `effort:` line. The reviewer is set to `xhigh` because a missed bug is the most expensive failure in this workflow and the reviewer's runs are short. If your model does not accept `xhigh`, use `high`.
+- **Effort** is set in two places: `effortLevel` in `.claude/settings.json` for the main session (`high`), and the `effort:` line in each agent file (`medium` for all three). The key names differ, and `effort` in `settings.json` is not read. Raise the reviewer's level if it misses bugs; its runs are short, so the extra cost is small. Not every model accepts every level, for example `xhigh`.
 - **Test commands.** Add your project's test, lint and type-check commands to `CLAUDE.md`. The main session and the reviewer both read that file, and a reviewer that can run the tests catches more than one that only reads the diff.
 
 ## Run on a single model

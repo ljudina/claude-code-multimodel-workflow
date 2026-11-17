@@ -46,7 +46,9 @@ So a subagent pays off in two cases. One is when the work would otherwise fill t
 
 **The planner matches its length to the change.** Fable's output is the most expensive text in the workflow. In the test run below, the planner wrote almost as much as the main session for a three-file task, which led to the instruction to keep small plans short.
 
-**The model is set in `settings.json`.** `CLAUDE.md` can describe which model should be used, but it cannot select one. The settings file can.
+**The model and its effort level are set in `settings.json`.** `CLAUDE.md` can describe which model should be used, but it cannot select one. The settings file can, through `model` and `effortLevel`.
+
+**High effort for the main session, medium for the subagents.** The main session writes the code, so that is where the extra reasoning goes. The subagents get their value from the model they run on and from starting in fresh context, and each has a narrow job with a short report.
 
 **`CLAUDE.md` is short.** It is loaded into the main session and into every subagent spawn.
 
@@ -66,9 +68,9 @@ Token counts from one test session, in which Claude built a three-file Python to
 Two things follow from these numbers:
 
 - The main session accounts for about 92% of input tokens. Almost all of that is context re-read from the prompt cache on each request, which is billed at a lower rate than fresh input but is still where the volume is. The model the main session runs on, and how much is in its context, matter more than anything done to the subagents.
-- The subagents are cheap in absolute terms. Running the reviewer at a higher effort level costs little, which is why it is set to `xhigh`.
+- The subagents are cheap in absolute terms, so their effort level moves the total cost very little in either direction. They run at `medium`; raising the reviewer's level is an inexpensive change if it misses bugs.
 
-This is a single small session, measured before the planner length instruction and the reviewer effort setting were added. Treat it as an illustration of where tokens go and measure your own sessions with `.claude/models.py`.
+This is a single small session, measured before the planner length instruction and the effort settings were added. Treat it as an illustration of where tokens go and measure your own sessions with `.claude/models.py`.
 
 ## Beyond this repository
 

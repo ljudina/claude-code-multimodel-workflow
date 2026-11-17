@@ -19,7 +19,7 @@ Start Claude Code in the folder.
 | Check | Expected |
 |---|---|
 | Startup banner | `Using Opus … (from .claude/settings.json)` |
-| `/model` | Opus |
+| `/model` | Opus, high effort |
 | `/agents` | `search` on Sonnet, `planner` and `reviewer` on Fable |
 
 `/agents` shows the configured agents and their models. `/list-agents` is a different command: it shows which agents are running, without their models.
@@ -97,8 +97,9 @@ Run it from the project root. It finds the transcripts by the current directory.
 |---|---|
 | `/agents` does not list the three agents | The session started before the files were added. Restart Claude Code in the project folder. |
 | The main session is not on Opus | `.claude/settings.json` is missing from the project root, or the model was changed with `/model` during the session. |
+| The main session is not at high effort | The key in `.claude/settings.json` must be `effortLevel`, not `effort`. `/effort` also changes the level and saves it to your user settings. |
 | No `planner` or `reviewer` line after a multi-file task | Check that the workflow section is in the project's `CLAUDE.md`, then restart. `CLAUDE.md` is read when the session starts. |
-| The reviewer does not start, or reports a problem with its effort level | Change `effort: xhigh` to `effort: high` in `.claude/agents/reviewer.md` and restart. |
+| An agent does not start, or reports a problem with its effort level | The model does not accept the level in the agent's `effort:` line. Set a level it accepts, such as `medium` or `high`, and restart. |
 | The reviewer reviews whole files instead of a diff | The repository has no commits yet, so there is nothing to diff against. Make a first commit. |
 | No `search` line | Expected in small projects. See step 5. |
 | The script prints `No sessions found` | Run it from the folder where Claude Code was started. |
