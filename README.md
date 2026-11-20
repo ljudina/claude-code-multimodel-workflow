@@ -40,7 +40,7 @@ The reasoning behind each rule, and token measurements from a test run, are in [
 | `.claude/settings.json` | Sets the main session to Opus at high effort for the project |
 | `CLAUDE.md` | The rules that tell the main session when to use each agent |
 | `.claude/models.py` | Optional script that shows which model each agent used and how many tokens it consumed |
-| `.claude/solo.sh` | Optional script that runs a session on one model with subagents disabled |
+| `.claude/solo.sh` | Optional script that runs a session with the workflow's subagents disabled, so the main model does their work |
 
 ## Requirements
 
@@ -111,13 +111,15 @@ The workflow can be switched off for one session without changing any files. Fro
 .claude/solo.sh fable
 ```
 
-This starts a session where Fable does everything. With no arguments it uses Opus. Anything after the model name goes to `claude`, so `.claude/solo.sh sonnet -p "fix the failing test"` also works. The model name is required when other arguments follow, because the first argument is always read as the model.
+This starts a session where Fable does the search, planning and review that the workflow agents would do. With no arguments it uses Opus. Anything after the model name goes to `claude`, so `.claude/solo.sh sonnet -p "fix the failing test"` also works. The model name is required when other arguments follow, because the first argument is always read as the model.
 
-`--disallowedTools` removes the tool that starts subagents, and the appended prompt stops the model following rules it can no longer carry out. `/agents` still lists the agents, but the session cannot start them. Use `--model` rather than `/model` for this, because `/model` saves the choice to your user settings.
+`--disallowedTools` blocks the three workflow agents by name (`Agent(planner),Agent(reviewer),Agent(search)`), and the appended prompt stops the model following rules it can no longer carry out. Built-in subagents such as Explore and general-purpose stay available, and some of them run on their own model, so the session is single-model only for the work the workflow agents would have done. The agent files stay in place; only the solo session is blocked from starting them. Use `--model` rather than `/model` for this, because `/model` saves the choice to your user settings.
+
+To disable a different set of agents, edit the list in `solo.sh`. It names only this workflow's agents, so any other custom agents, in the project or in `~/.claude/agents/`, stay enabled in solo mode; add them to the list if they should be off too. If an agent in `.claude/agents/` is added or renamed, update the list to match. The same rule works in settings as `"permissions": { "deny": ["Agent(planner)"] }`, but there it applies to every session, not just solo ones. Put it in `.claude/settings.local.json` for a personal override rather than in the checked-in `.claude/settings.json`.
 
 The cost is the independent review: the model that wrote the code is also the one checking it.
 
-Start solo sessions fresh rather than resuming across modes. A conversation keeps the system prompt from its first request until it is compacted, so `solo.sh fable --resume <id>` on a normal session disables agents but leaves out the solo instructions, and resuming a solo session with plain `claude` keeps them.
+Start solo sessions fresh rather than resuming across modes. A conversation keeps the system prompt from its first request until it is compacted, so `solo.sh fable --resume <id>` on a normal session disables the workflow agents but leaves out the solo instructions, and resuming a solo session with plain `claude` keeps them.
 
 To keep the workflow but run every agent on one model, override the agent files for the session. `_FORCE` is needed because the `model:` line in an agent file otherwise wins. It requires Claude Code 2.1.257 or later:
 
